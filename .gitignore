@@ -1,0 +1,9 @@
+# Ignore .env
+.env
+
+# Ignore the pdfs folder and the output_data folder
+pdfs/
+output_data/
+
+# Ignore all the __pycache__ folders
+__pycache__/
