@@ -12,8 +12,8 @@ from api.post_invoice_parser import custom_analyze
 if __name__ == "__main__":
 
     # Set vendor name & folder
-    MODEL_NAME = "PREBUILT"
-    FOLDER_NAME = "staples"
+    MODEL_NAME = "HD_SUPPLY_ORDER"
+    FOLDER_NAME = "hd-supply/towne_place/june_2024"
 
     # Get env variables
     load_dotenv()

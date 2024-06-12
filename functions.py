@@ -54,13 +54,13 @@ def extract_general_fields(fields):
             general_fields_dict[field] = fields[field]['value'] if fields[field]['value'] else ""
     return general_fields_dict
 
-def extact_products_data(products_data, invoice_id):
+def extact_products_data(products_data, invoice_key):
     """Function to extract the data of the products"""
     products_list = products_data['value']
     products = []
     for product in products_list:
         product_dict = {}
-        product_dict['InvoiceId'] = invoice_id
+        product_dict[invoice_key[1]] = invoice_key[0]
         for field in product['value']:
             if field == 'Price' or field == 'UnitPrice':
                 value = swap_dots_commas(product['value'][field]['value']) if product['value'][field]['value'] else ""
@@ -70,14 +70,25 @@ def extact_products_data(products_data, invoice_id):
         products.append(product_dict)
     return products
 
+def set_invoice_id_for_products(fields_dict):
+    """Function to set the invoice_id for the products"""
+    invoice_id = fields_dict['InvoiceId']
+    order_number = fields_dict['OrderNumber'] if 'OrderNumber' in fields_dict else ''
+    if invoice_id != '':
+        return (invoice_id, 'InvoiceId')
+    elif order_number != '':
+        return (order_number, 'OrderNumber')
+    else:
+        return ("N/A", "N/A")
+
 def save_result_in_excel(result, output_path):
     """Function to save the API result into a Excel file"""
 
     # Extract the data from the json's invoice
     general_fields = result['documents'][0]['fields']
     fields_dict = extract_general_fields(general_fields)
-    invoice_id = fields_dict['InvoiceId']
-    products_dict = extact_products_data(general_fields['products-data'], invoice_id)
+    invoice_key = set_invoice_id_for_products(fields_dict)
+    products_dict = extact_products_data(general_fields['products-data'], invoice_key)
 
     # Create a DataFrame with the data
     fields_df = pd.DataFrame([fields_dict])
