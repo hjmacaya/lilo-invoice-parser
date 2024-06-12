@@ -4,16 +4,16 @@ Script to run the main program
 import os
 import time
 import json
-import functions as fc
 from datetime import datetime
 from dotenv import load_dotenv
+import functions as fc
 from api.post_invoice_parser import custom_analyze
 
 if __name__ == "__main__":
 
     # Set vendor name & folder
     MODEL_NAME = "HD_SUPPLY_ORDER"
-    FOLDER_NAME = "hd-supply/towne_place/june_2024"
+    FOLDER_NAME = "hd_supply/towne_place/june_2024"
 
     # Get env variables
     load_dotenv()
@@ -24,24 +24,25 @@ if __name__ == "__main__":
     # Analyze all the PDFs store in the vendor folder
     date_prefix = datetime.now().strftime('%Y_%m_%d_')
     for filename in os.listdir(f'pdfs/{FOLDER_NAME}'):
+        # Check if the file is a PDF
+        if filename.endswith(".pdf"):
+            # Wait 3 seconds to avoid rate limit
+            time.sleep(3)
 
-        # Wait 3 seconds to avoid rate limit
-        time.sleep(3)
+            # Set input and output paths
+            input_path = f'pdfs/{FOLDER_NAME}/{filename}'
+            output_path = f'output_data/{FOLDER_NAME}/{date_prefix}orders.xlsx'
 
-        # Set input and output paths
-        input_path = f'pdfs/{FOLDER_NAME}/{filename}'
-        output_path = f'output_data/{FOLDER_NAME}/{date_prefix}'
+            # Analyze file with model
+            # result_dict = custom_analyze(endpoint, key, model_id, input_path)
 
-        # Analyze file with model
-        result_dict = custom_analyze(endpoint, key, model_id, input_path)
+            with open("backup.json", "r") as json_file:
+                result_dict = json.load(json_file)
 
-        # with open("backup.json", "r") as json_file:
-        #     result_dict = json.load(json_file)
+            # Save result_dict
+            if MODEL_NAME == "PREBUILT":
+                fc.save_prebuilt_result_in_excel(result_dict, output_path)
+            else:
+                fc.save_result_in_excel(result_dict, output_path, MODEL_NAME)
 
-        # Save result_dict
-        if MODEL_NAME == "PREBUILT":
-            fc.save_prebuilt_result_in_excel(result_dict, output_path)
-        else:
-            fc.save_result_in_excel(result_dict, output_path)
-
-        print(f"Analyzed {filename}")
+            print(f"Analyzed {filename}")

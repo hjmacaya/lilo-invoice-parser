@@ -1,9 +1,10 @@
 """
 Module to store utility functions
 """
-import json
+from pprint import pprint
 import pandas as pd
 import parameters as p
+import processing as pr
 
 def swap_dots_commas(value):
     """Function to swap dots with commas"""
@@ -41,17 +42,47 @@ Here are the extracting functions for the CUSTOM MODELS:
 - Sysco
 """
 
+# def extract_general_fields(fields):
+#     """Function to extract the general information of the invoice"""
+#     general_fields_dict = {}
+#     for field in fields:
+#         if field == 'Items':
+#             continue
+#         elif field in p.PRICE_FIELDS_HD_SUPPLY:
+#             value = swap_dots_commas(fields[field]['value']) if fields[field]['value'] else ""
+#             general_fields_dict[field] = value
+#         else:
+#             general_fields_dict[field] = fields[field]['value'] if fields[field]['value'] else ""
+#     return general_fields_dict
+
+# def extact_products_data(products_data, invoice_key):
+#     """Function to extract the data of the products"""
+#     products_list = products_data['value']
+#     products = []
+#     for product in products_list:
+#         product_dict = {}
+#         product_dict[invoice_key[1]] = invoice_key[0]
+#         for field in product['value']:
+#             if field == 'Price' or field == 'UnitPrice':
+#                 value = swap_dots_commas(product['value'][field]['value']) if product['value'][field]['value'] else ""
+#                 value = value.replace('$', '').replace('(', '')
+#                 product_dict[field] = value
+#             elif field == 'Unit':
+#                 value = product['value'][field]['value'] if product['value'][field]['value'] else ""
+#                 value = value.replace(')', '').replace('(', '')
+#                 product_dict[field] = value
+#             else:
+#                 product_dict[field] = product['value'][field]['value'] if product['value'][field]['value'] else ""
+#         products.append(product_dict)
+#     return products
+
 def extract_general_fields(fields):
     """Function to extract the general information of the invoice"""
     general_fields_dict = {}
     for field in fields:
-        if field == 'products-data':
+        if field == 'Items':
             continue
-        elif field in p.PRICE_FIELDS_HD_SUPPLY:
-            value = swap_dots_commas(fields[field]['value']) if fields[field]['value'] else ""
-            general_fields_dict[field] = value
-        else:
-            general_fields_dict[field] = fields[field]['value'] if fields[field]['value'] else ""
+        general_fields_dict[field] = fields[field]['value'] if fields[field]['value'] else ""
     return general_fields_dict
 
 def extact_products_data(products_data, invoice_key):
@@ -62,11 +93,7 @@ def extact_products_data(products_data, invoice_key):
         product_dict = {}
         product_dict[invoice_key[1]] = invoice_key[0]
         for field in product['value']:
-            if field == 'Price' or field == 'UnitPrice':
-                value = swap_dots_commas(product['value'][field]['value']) if product['value'][field]['value'] else ""
-                product_dict[field] = value
-            else:
-                product_dict[field] = product['value'][field]['value'] if product['value'][field]['value'] else ""
+            product_dict[field] = product['value'][field]['value'] if product['value'][field]['value'] else ""
         products.append(product_dict)
     return products
 
@@ -76,19 +103,29 @@ def set_invoice_id_for_products(fields_dict):
     order_number = fields_dict['OrderNumber'] if 'OrderNumber' in fields_dict else ''
     if invoice_id != '':
         return (invoice_id, 'InvoiceId')
-    elif order_number != '':
+    if order_number != '':
         return (order_number, 'OrderNumber')
-    else:
-        return ("N/A", "N/A")
+    return ("N/A", "N/A")
 
-def save_result_in_excel(result, output_path):
+def set_price_to_products(products_dict):
+    """Function to set the price of the products"""
+    for product in products_dict:
+        if product['Price'] == '' and product['UnitPrice'] != '' and product['OrderQuantity'].isdigit():
+            product['Price'] = str(float(product['UnitPrice']) * float(product['OrderQuantity']))
+    return products_dict
+
+def save_result_in_excel(result, output_path, model_name):
     """Function to save the API result into a Excel file"""
 
     # Extract the data from the json's invoice
     general_fields = result['documents'][0]['fields']
     fields_dict = extract_general_fields(general_fields)
-    invoice_key = set_invoice_id_for_products(fields_dict)
-    products_dict = extact_products_data(general_fields['products-data'], invoice_key)
+    invoice_key = set_invoice_id_for_products(fields_dict) # It connects invoices with products
+    products_dict = extact_products_data(general_fields['Items'], invoice_key)
+
+    # Process the data
+    fields_dict = pr.process_general_fields(fields_dict, model_name)
+    products_dict = pr.process_products_data(products_dict, model_name)
 
     # Create a DataFrame with the data
     fields_df = pd.DataFrame([fields_dict])
@@ -130,7 +167,6 @@ def extract_items_prebuilt(items_list, invoice_id):
             item_dict[f'{field} manual accuracy'] = 0
         items.append(item_dict)
     return items
-
 
 def save_prebuilt_result_in_excel(result, output_path):
     """Function to save the API result into a Excel file"""

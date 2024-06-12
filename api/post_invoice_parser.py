@@ -11,7 +11,7 @@ from azure.core.credentials import AzureKeyCredential
 from azure.ai.formrecognizer import DocumentAnalysisClient
 
 def custom_analyze(endpoint, key, model_id, input_path):
-    """Functiont to analyze HD Supply PFDs"""
+    """Functiont to analyze Invoices PFDs"""
     document_analysis_client = DocumentAnalysisClient(
         endpoint=endpoint, credential=AzureKeyCredential(key)
     )
@@ -28,7 +28,7 @@ def custom_analyze(endpoint, key, model_id, input_path):
     # print(result_dict['documents'][0]['fields'])
 
     # Save as json
-    # with open("backup.json", "w") as json_file:
-    #     json.dump(result_dict, json_file)
+    with open("backup.json", "w") as json_file:
+        json.dump(result_dict, json_file)
 
     return result_dict

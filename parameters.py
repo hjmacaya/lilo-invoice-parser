@@ -9,8 +9,8 @@ HD_SUPPLY_FIELDS = [
 ]
 
 PRICE_FIELDS_HD_SUPPLY = [
-    'Price', 'UnitPrice', 'InvoiceTotal', 'Subtotal', 'TotalTax',
-    'ShippingCost', 'Discount', 'OtherCharges'
+    'Price', 'UnitPrice', 'InvoiceTotal', 'SubTotal', 'TotalTax',
+    'ShippingCost', 'Discount', 'OtherCharges', 'Subtotal'
     ]
 
 PREBUILT_GENERAL_FIELDS = [
