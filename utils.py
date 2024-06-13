@@ -35,44 +35,42 @@ def write_in_excel_file(output_path, fields_df, products_df):
 def standarize_price(price_str):
     """Function to standarize the price"""
     if price_str != '':
+
+        # Check if it has only one $ sign
+        if price_str.count('$') > 1:
+            prices = price_str.split(' ')
+            price_str = prices[0]
+
         # Remove any currency symbols and unnecessary spaces
         cleaned_price = price_str.strip().replace('$', '').replace('€', '').replace('£', '')
-        cleaned_price = re.sub(r'[^\d,.]', '', cleaned_price.strip())
+        cleaned_price = re.sub(r'[^\d,.]', '', price_str.strip())
 
-        # Detect comma or period as thousand or decimal separator based on context
+        # Handling mixed separators
         if ',' in cleaned_price and '.' in cleaned_price:
-            # European format (e.g., 20.000,00)
-            if cleaned_price.find(',') < cleaned_price.find('.'):
-                # Comma comes before period, assume comma for thousands
-                cleaned_price = cleaned_price.replace(',', '')
-                cleaned_price = cleaned_price.replace('.', ',')
+            # Determine the role of '.' and ',' by their positions
+            if cleaned_price.index('.') < cleaned_price.index(','):
+                # '.' as thousand, ',' as decimal
+                cleaned_price = cleaned_price.replace('.', '').replace(',', '.')
             else:
-                # Period comes before comma, assume period for thousands
-                cleaned_price = cleaned_price.replace('.', '')
-                cleaned_price = cleaned_price.replace(',', '.')
+                # ',' as thousand, '.' as decimal
+                cleaned_price = cleaned_price.replace(',', '')
         elif ',' in cleaned_price:
-            # Only commas are present, could be thousands or decimal
-            if cleaned_price[-3] == ',':
-                # Likely a decimal separator
-                cleaned_price = cleaned_price.replace(',', '.')
-            else:
-                # Likely a thousands separator
+            # Check if ',' is likely a decimal separator
+            if len(cleaned_price.split(',')[-1]) == 3 and cleaned_price.count(',') == 1:
                 cleaned_price = cleaned_price.replace(',', '')
-        elif '.' in cleaned_price:
-            # Only periods are present
-            if cleaned_price[-3] == '.':
-                # Likely a decimal separator, keep as is
-                pass
             else:
-                # Likely a thousands separator
+                cleaned_price = cleaned_price.replace(',', '.')
+        else:
+            # Remove '.' if it's likely a thousands separator
+            if len(cleaned_price.split('.')[-1]) == 3 and cleaned_price.count('.') == 1:
                 cleaned_price = cleaned_price.replace('.', '')
 
         # Convert to float and format
         try:
             numeric_price = float(cleaned_price)
             standardized_price = f"{numeric_price:,.2f}"
+            return standardized_price
         except ValueError:
             print(f"Error: Could not convert {price_str} to float")
             return price_str
-
-        return standardized_price
+    return price_str

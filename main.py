@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     # Set vendor name & folder
     MODEL_NAME = "HD_SUPPLY_ORDER"
-    FOLDER_NAME = "hd_supply/towne_place/june_2024/missing"
+    FOLDER_NAME = "hd_supply/towne_place/june_2024/"
 
     # Get env variables
     load_dotenv()

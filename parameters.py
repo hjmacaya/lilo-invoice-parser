@@ -24,6 +24,9 @@ PREBUILT_ITEM_FIELDS = [
     'Amount', 'Description', 'Quantity', 'UnitPrice', 'ProductCode', 'Unit', 'Tax'
 ]
 
+HSO_PACK_SIZE_KEYWORDS = [
+    'pack', 'case', 'cases', '/cs', 'carton', 'box', 'count'
+]
 
 dict_response_example = {
     'api_version': '2023-07-31',
