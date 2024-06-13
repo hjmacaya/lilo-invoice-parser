@@ -36,7 +36,8 @@ def standarize_price(price_str):
     """Function to standarize the price"""
     if price_str != '':
         # Remove any currency symbols and unnecessary spaces
-        cleaned_price = re.sub(r'[^\d,.]', '', price_str.strip())
+        cleaned_price = price_str.strip().replace('$', '').replace('€', '').replace('£', '')
+        cleaned_price = re.sub(r'[^\d,.]', '', cleaned_price.strip())
 
         # Detect comma or period as thousand or decimal separator based on context
         if ',' in cleaned_price and '.' in cleaned_price:

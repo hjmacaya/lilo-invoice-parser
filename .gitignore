@@ -5,5 +5,11 @@
 pdfs/
 output_data/
 
+# Ignore the .git folder
+.git/
+
+# Ignore the backuo_json folder
+backup_json/
+
 # Ignore all the __pycache__ folders
 __pycache__/

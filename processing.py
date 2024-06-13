@@ -16,16 +16,21 @@ def process_hd_supply_orders_fields(fields_dict):
     processed_fields = {}
     for key, value in fields_dict.items():
         if key in p.PRICE_FIELDS_HD_SUPPLY and value != '':
-            fields_dict[key] = "$" + ut.standarize_price(value)
+            new_price = ut.standarize_price(value)
+            fields_dict[key] = "$" + new_price if "$" not in new_price else new_price
         processed_fields[key] = fields_dict[key]
     return processed_fields
 
 def process_unit_price_hso(price):
     """Function to process the unit price of the HD Supply Orders"""
     try:
-        price = ut.standarize_price(price)
-        return float(price)
+        std_price = ut.standarize_price(price)
+        print(f"Standardized price: {std_price}")
+        std_price = float(price) if price else ''
+        return std_price
     except ValueError:
+        return price
+    except TypeError:
         return price
 
 def calculate_price_hso(unit_price, quantity):
@@ -44,8 +49,8 @@ def process_hd_supply_orders_products(products):
     for product in products:
         product['UnitPrice'] = process_unit_price_hso(product['UnitPrice'])
         product['Price'] = calculate_price_hso(product['UnitPrice'], product['OrderQuantity'])
-        product['UnitPrice'] = f"${product['UnitPrice']:,.2f}"
-        product['Price'] = f"${product['Price']:,.2f}"
+        product['UnitPrice'] = f"${product['UnitPrice']:,.2f}" if product['UnitPrice'] != '' else ''
+        product['Price'] = f"${product['Price']:,.2f}" if product['Price'] != '' else ''
         product['Unit'] = product['Unit'].replace(')', '').replace('(', '')
         product['ProductDescription'] = product['ProductBrand'] + ' ' + product['ProductDescription']
         new_products.append(product)

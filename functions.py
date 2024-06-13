@@ -128,11 +128,11 @@ def save_result_in_excel(result, output_path, model_name):
     products_dict = pr.process_products_data(products_dict, model_name)
 
     # Create a DataFrame with the data
-    fields_df = pd.DataFrame([fields_dict])
-    products_df = pd.DataFrame(products_dict)
+    # fields_df = pd.DataFrame([fields_dict])
+    # products_df = pd.DataFrame(products_dict)
 
     # Save the data in a excel file
-    write_in_excel_file(output_path, fields_df, products_df)
+    # write_in_excel_file(output_path, fields_df, products_df)
 
 """
 Here are the extracting functions for the PRE-BUILT MODEL:
