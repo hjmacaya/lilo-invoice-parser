@@ -23,7 +23,6 @@ if __name__ == "__main__":
 
     # Analyze all the PDFs store in the vendor folder
     date_prefix = datetime.now().strftime('%Y_%m_%d_')
-    count = 0
     for filename in os.listdir(f'pdfs/{FOLDER_NAME}'):
         # Check if the file is a PDF
         if filename.endswith(".pdf"):
@@ -36,7 +35,7 @@ if __name__ == "__main__":
 
             # Analyze file with model
             print(f"Analyzing {filename}...")
-            result_dict = custom_analyze(endpoint, key, model_id, input_path, count)
+            result_dict = custom_analyze(endpoint, key, model_id, input_path, filename)
 
             # with open("backup_json/hd_supply/towne_place/june_2024/backup_v2_54.json", "r") as json_file:
             #     result_dict = json.load(json_file)
@@ -48,4 +47,3 @@ if __name__ == "__main__":
             #     fc.save_result_in_excel(result_dict, output_path, MODEL_NAME)
 
             print(f"Analyzed {filename}\n")
-            count += 1
