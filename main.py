@@ -22,12 +22,12 @@ if __name__ == "__main__":
     model_id = os.getenv(f"{MODEL_NAME}_MODEL_ID")
 
     # Analyze all the PDFs store in the vendor folder
-    is_checkpoint_file = False
+    # is_checkpoint_file = False
     date_prefix = datetime.now().strftime('%Y_%m_%d_')
     for filename in os.listdir(f'pdfs/{FOLDER_NAME}'):
 
         # Check if the file is a PDF
-        if filename.endswith(".pdf") and is_checkpoint_file:
+        if filename.endswith(".pdf"):
             # Wait 3 seconds to avoid rate limit
             time.sleep(3)
 
@@ -50,6 +50,7 @@ if __name__ == "__main__":
 
             print(f"Analyzed {filename}\n")
 
+        # NOTE: Is to start analyzing from checkpoint
         # Check if the file is a checkpoint file
-        if filename == "1.17.pdf":
-            is_checkpoint_file = True
+        # if filename == "1.17.pdf":
+        #     is_checkpoint_file = True
