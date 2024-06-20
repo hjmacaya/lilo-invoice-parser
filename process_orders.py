@@ -3,8 +3,8 @@ Script to process orders from the backup JSON files
 """
 import os
 import json
-import pandas as pd
 from datetime import datetime
+import pandas as pd
 
 import functions as fn
 import processing as pr
@@ -17,10 +17,10 @@ import processing as pr
 #     os.rename(f"{dir_path}/{file}", f"{dir_path}/order_{i}.json")
 
 # 2. Read each json and extract the OrderNumber
-dir_path = "backup_json/hd_supply/towne_place/june_2024"
+dir_path = "backup_json/hd_supply/springhill_medford/june_2024"
 json_files = [f for f in os.listdir(dir_path) if f.endswith(".json")]
 orders_numbers = []
-FOLDER_NAME = "hd_supply/towne_place/june_2024/"
+FOLDER_NAME = "hd_supply/springhill_medford/june_2024/"
 date_prefix = datetime.now().strftime('%Y_%m_%d_')
 output_path = f'output_data/{FOLDER_NAME}/{date_prefix}processed_orders.xlsx'
 
@@ -41,7 +41,6 @@ for file in json_files:
         # Create a DataFrame with the data
         fields_df = pd.DataFrame([fields_dict])
         products_df = pd.DataFrame(products_dict)
-
 
         # Save the data in a excel file
         fn.write_in_excel_file(output_path, fields_df, products_df)

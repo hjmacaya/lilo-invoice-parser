@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     # Set vendor name & folder
     MODEL_NAME = "HD_SUPPLY_ORDER"
-    FOLDER_NAME = "hd_supply/towne_place/june_2024/"
+    FOLDER_NAME = "hd_supply/springhill_medford/june_2024/"
 
     # Get env variables
     load_dotenv()
@@ -22,10 +22,12 @@ if __name__ == "__main__":
     model_id = os.getenv(f"{MODEL_NAME}_MODEL_ID")
 
     # Analyze all the PDFs store in the vendor folder
+    is_checkpoint_file = False
     date_prefix = datetime.now().strftime('%Y_%m_%d_')
     for filename in os.listdir(f'pdfs/{FOLDER_NAME}'):
+
         # Check if the file is a PDF
-        if filename.endswith(".pdf"):
+        if filename.endswith(".pdf") and is_checkpoint_file:
             # Wait 3 seconds to avoid rate limit
             time.sleep(3)
 
@@ -47,3 +49,7 @@ if __name__ == "__main__":
             #     fc.save_result_in_excel(result_dict, output_path, MODEL_NAME)
 
             print(f"Analyzed {filename}\n")
+
+        # Check if the file is a checkpoint file
+        if filename == "1.17.pdf":
+            is_checkpoint_file = True

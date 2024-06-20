@@ -131,6 +131,8 @@ def process_hd_supply_orders_products(products):
         if product['Price'] != '':
             product['Price'] = "$" + f"{product['Price']:,.2f}"
         if product['UnitPrice'] != '':
+            if ',' in product['UnitPrice']:
+                product['UnitPrice'] = product['UnitPrice'].replace(',', '')
             product['UnitPrice'] = "$" + f"{float(product['UnitPrice']):,.2f}"
 
         # 5. Format Unit "each)" -> "each"
