@@ -13,3 +13,6 @@ backup_json/
 
 # Ignore all the __pycache__ folders
 __pycache__/
+
+# Ignore analysis docs folder
+analysis_docs/
