@@ -29,6 +29,6 @@ def custom_analyze(endpoint, key, model_id, input_path, output_path):
 
     # Save as json
     with open(output_path, "w", encoding="utf-8") as json_file:
-        json.dump(result_dict, json_file)
+        json.dump(result_dict, json_file, default=str)
 
     return result_dict

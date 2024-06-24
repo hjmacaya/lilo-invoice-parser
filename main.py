@@ -54,3 +54,5 @@ if __name__ == "__main__":
         # Check if the file is a checkpoint file
         # if filename == "1.17.pdf":
         #     is_checkpoint_file = True
+
+        break

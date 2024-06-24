@@ -28,6 +28,9 @@ HSO_PACK_SIZE_KEYWORDS = [
     'pack', 'case', 'cases', '/cs', 'carton', 'box', 'count'
 ]
 
+SYSCO_PRICE_FIELDS = ['InvoiceTotal', 'Subtotal', 'TotalTax', 'ShippingCost',
+                      'BottleFee']
+
 dict_response_example = {
     'api_version': '2023-07-31',
     'model_id': 'prebuilt-invoice',

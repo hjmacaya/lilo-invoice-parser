@@ -1,7 +1,7 @@
 """
 Module to store utility functions
 """
-import json
+from datetime import datetime
 import pandas as pd
 import parameters as p
 

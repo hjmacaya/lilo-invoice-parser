@@ -42,69 +42,44 @@ Here are the extracting functions for the CUSTOM MODELS:
 - Sysco
 """
 
-# def extract_general_fields(fields):
-#     """Function to extract the general information of the invoice"""
-#     general_fields_dict = {}
-#     for field in fields:
-#         if field == 'Items':
-#             continue
-#         elif field in p.PRICE_FIELDS_HD_SUPPLY:
-#             value = swap_dots_commas(fields[field]['value']) if fields[field]['value'] else ""
-#             general_fields_dict[field] = value
-#         else:
-#             general_fields_dict[field] = fields[field]['value'] if fields[field]['value'] else ""
-#     return general_fields_dict
-
-# def extact_products_data(products_data, invoice_key):
-#     """Function to extract the data of the products"""
-#     products_list = products_data['value']
-#     products = []
-#     for product in products_list:
-#         product_dict = {}
-#         product_dict[invoice_key[1]] = invoice_key[0]
-#         for field in product['value']:
-#             if field == 'Price' or field == 'UnitPrice':
-#                 value = swap_dots_commas(product['value'][field]['value']) if product['value'][field]['value'] else ""
-#                 value = value.replace('$', '').replace('(', '')
-#                 product_dict[field] = value
-#             elif field == 'Unit':
-#                 value = product['value'][field]['value'] if product['value'][field]['value'] else ""
-#                 value = value.replace(')', '').replace('(', '')
-#                 product_dict[field] = value
-#             else:
-#                 product_dict[field] = product['value'][field]['value'] if product['value'][field]['value'] else ""
-#         products.append(product_dict)
-#     return products
-
 def extract_general_fields(fields):
     """Function to extract the general information of the invoice"""
     general_fields_dict = {}
+    fields_without_confidence = [field for field in fields if field != 'Items']
     for field in fields:
         if field == 'Items':
             continue
         general_fields_dict[field] = fields[field]['value'] if fields[field]['value'] else ""
-    return general_fields_dict
+        general_fields_dict[f'{field} confidence'] = fields[field]['confidence'] if fields[field]['confidence'] else ""
+        general_fields_dict[f'{field} manual accuracy'] = 0
+    return general_fields_dict, fields_without_confidence
 
 def extact_products_data(products_data, invoice_key):
     """Function to extract the data of the products"""
     products_list = products_data['value']
     products = []
+    items_fields_without_confidence = [field for field in products_list[0]['value']]
     for product in products_list:
         product_dict = {}
         product_dict[invoice_key[1]] = invoice_key[0]
         for field in product['value']:
             product_dict[field] = product['value'][field]['value'] if product['value'][field]['value'] else ""
+            product_dict[f'{field} confidence'] = product['value'][field]['confidence'] if product['value'][field]['confidence'] else ""
+            product_dict[f'{field} manual accuracy'] = 0
         products.append(product_dict)
-    return products
+    return products, items_fields_without_confidence
 
 def set_invoice_id_for_products(fields_dict):
     """Function to set the invoice_id for the products"""
-    invoice_id = fields_dict['InvoiceId']
+    invoice_id = fields_dict['InvoiceId'] if 'InvoiceId' in fields_dict else ''
     order_number = fields_dict['OrderNumber'] if 'OrderNumber' in fields_dict else ''
+    order_id = fields_dict['OrderId'] if 'OrderId' in fields_dict else ''
     if invoice_id != '':
         return (invoice_id, 'InvoiceId')
     if order_number != '':
         return (order_number, 'OrderNumber')
+    if order_id != '':
+        return (order_id, 'OrderId')
     return ("N/A", "N/A")
 
 def set_price_to_products(products_dict):
@@ -119,20 +94,30 @@ def save_result_in_excel(result, output_path, model_name):
 
     # Extract the data from the json's invoice
     general_fields = result['documents'][0]['fields']
-    fields_dict = extract_general_fields(general_fields)
+    fields_dict, general_fields_without_confidence = extract_general_fields(general_fields)
     invoice_key = set_invoice_id_for_products(fields_dict) # It connects invoices with products
-    products_dict = extact_products_data(general_fields['Items'], invoice_key)
+    products_dict, products_fields_woconfidence = extact_products_data(general_fields['Items'], invoice_key)
 
     # Process the data
     fields_dict = pr.process_general_fields(fields_dict, model_name)
     products_dict = pr.process_products_data(products_dict, model_name)
 
     # Create a DataFrame with the data
-    # fields_df = pd.DataFrame([fields_dict])
-    # products_df = pd.DataFrame(products_dict)
+    fields_df = pd.DataFrame([fields_dict])
+    products_df = pd.DataFrame(products_dict)
 
-    # Save the data in a excel file
-    # write_in_excel_file(output_path, fields_df, products_df)
+    # Save the data in a excel file, with confidence
+    output_path = output_path + "_parsed_with_confidence.xlsx"
+    write_in_excel_file(output_path, fields_df, products_df)
+
+    # Save the data without confidence and accuracy level in a excel file
+    fields_df.drop(columns=[f'{field} confidence' for field in general_fields_without_confidence], inplace=True)
+    products_df.drop(columns=[f'{field} confidence' for field in products_fields_woconfidence], inplace=True)
+    fields_df.drop(columns=[f'{field} manual accuracy' for field in general_fields_without_confidence], inplace=True)
+    products_df.drop(columns=[f'{field} manual accuracy' for field in products_fields_woconfidence], inplace=True)
+    output_path = output_path.replace("parsed_with_confidence", "parsed_without_confidence")
+    write_in_excel_file(output_path, fields_df, products_df)
+
 
 """
 Here are the extracting functions for the PRE-BUILT MODEL:
@@ -183,7 +168,7 @@ def save_prebuilt_result_in_excel(result, output_path):
     items_df = pd.DataFrame(items_dict)
 
     # Save the data with confidence level in a excel file
-    output_path = output_path + "staples_with_confidence" + ".xlsx"
+    output_path = output_path + "_with_confidence" + ".xlsx"
     write_in_excel_file(output_path, fields_df, items_df)
 
     # Save the data without confidence and accuracy level in a excel file

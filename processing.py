@@ -1,6 +1,8 @@
 """
 Module to store the processing functions
 """
+# EXTERNAL IMPORTS
+import re
 
 # INTERNAL IMPORTS
 import parameters as p
@@ -145,6 +147,138 @@ def process_hd_supply_orders_products(products):
     return new_products
 
 """
+Sysco Invoice Model
+Processing functions
+"""
+
+def process_sysco_fields(fields_dict):
+    """
+    Process the fields of the Sysco invoices:
+    - Clean ShippingCost -> if can't be parsed to float, remove it
+    - InvoiceTotal, SUbtotal, TotalTax, ShippingCost -> format to float
+    """
+    processed_fields = {}
+    for key, value in fields_dict.items():
+        if key == 'ShippingCost':
+            try:
+                fields_dict[key] = float(value)
+            except ValueError:
+                fields_dict[key] = ''
+        if key in p.SYSCO_PRICE_FIELDS and value != '':
+            fields_dict[key] = process_price_sysco(value)
+        processed_fields[key] = fields_dict[key]
+    return processed_fields
+
+def process_price_sysco(price):
+    """
+    Function to process the price of Sysco
+    1. Only consider 2 decimals
+    2. Remove the weird signs at the end
+    """
+    try:
+        # Remove any trailing weird signs or non-numeric characters
+        cleaned_price = re.sub(r'[^\d\.]', '', price)
+
+        # Only consider 2 decimals
+        price_split = cleaned_price.split('.')
+        if len(price_split) == 2:
+            cleaned_price = price_split[0] + '.' + price_split[1][:2]
+        else:
+            cleaned_price = '.'.join(price_split)
+
+        # Convert to float
+        return float(cleaned_price)
+    except ValueError as e:
+        print(f"Error processing price: {price}")
+        print(e)
+        return price
+
+def process_ordered_quantity_sysco(ordered_quantity, price, unit_price):
+    """Function to extract the numric part of the ordered quantity"""
+    # Check if is Number + "S" format
+    if ordered_quantity != '' and ordered_quantity[-1].lower() == 's':
+        return ordered_quantity[:-1]
+
+    # Return the whole number of price/unit price
+    if price != '' and unit_price != '':
+        qty = price / unit_price
+        return str(int(qty))
+
+    return ordered_quantity
+
+def process_sysco_invoices_products(products):
+    """
+    Function to process the Sysco products
+    retrived from the invoices
+    1. Identify if 2 products were merged and split them
+    2.1 Remove weird signs from the price and unit price
+    2.2 Format the price -> to float
+    3. Process the OrderedQuantity by extracting the number
+    """
+    new_products = []
+    for product in products:
+        # 1. Identify if 2 products were merged
+        products_to_process = [product]
+        product_number_splitted = product['ProductNumber'].split(" ")
+        if len(product_number_splitted) == 2:
+
+            # Set numbers
+            product_1_number = product_number_splitted[0]
+            product_2_number = product_number_splitted[1]
+
+            # Set prices
+            product_1_price = product['Price'].split(" ")[0]
+            product_2_price = product['Price'].split(" ")[1]
+
+            # Set unit price
+            product_1_unit_price = product['UnitPrice'].split(" ")[0]
+            product_2_unit_price = product['UnitPrice'].split(" ")[1]
+
+            # Set product description
+            product_1_description = product['ProductDescription']
+            product_2_description = "Manually get it from last product. It is merged"
+
+            # Create a copy of the product
+            product_1 = product.copy()
+            product_2 = product.copy()
+
+            # Set the new values
+            product_1['ProductNumber'] = product_1_number
+            product_2['ProductNumber'] = product_2_number
+            product_1['Price'] = product_1_price
+            product_2['Price'] = product_2_price
+            product_1['UnitPrice'] = product_1_unit_price
+            product_2['UnitPrice'] = product_2_unit_price
+            product_1['ProductDescription'] = product_1_description
+            product_2['ProductDescription'] = product_2_description
+
+            # For product 2, set the other values to ''
+            for key in product_2.keys():
+                if key not in ['ProductNumber', 'Price', 'UnitPrice', 'ProductDescription', 'InvoiceId']:
+                    product_2[key] = ''
+
+            # Append the new products
+            products_to_process = [product_1, product_2]
+
+        for prod in products_to_process:
+            # 2. Remove wierd signs from the price and unit price
+            prod['Price'] = process_price_sysco(prod['Price'])
+            prod['UnitPrice'] = process_price_sysco(prod['UnitPrice'])
+
+            # 3. Process OrderedQuantity
+            if not prod['OrderedQuantity'].isdigit():
+                prod['OrderedQuantity'] = process_ordered_quantity_sysco(
+                    prod['OrderedQuantity'],
+                    prod['Price'],
+                    prod['UnitPrice']
+                )
+
+            new_products.append(prod)
+
+    return new_products
+
+
+"""
 General processing functions
 """
 
@@ -152,10 +286,15 @@ def process_general_fields(fields_dict, model_name):
     """Function to process the general fields"""
     if model_name == "HD_SUPPLY_ORDER":
         return process_hd_supply_orders_fields(fields_dict)
+    if model_name == "SYSCO":
+        return process_sysco_fields(fields_dict)
     return fields_dict
 
 def process_products_data(products_data, model_name):
     """Function to process the products data"""
     if model_name == "HD_SUPPLY_ORDER":
         return process_hd_supply_orders_products(products_data)
+    if model_name == "SYSCO":
+        new_products_data = process_sysco_invoices_products(products_data)
+        return new_products_data
     return products_data
