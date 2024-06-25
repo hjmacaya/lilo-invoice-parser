@@ -288,6 +288,8 @@ def process_general_fields(fields_dict, model_name):
         return process_hd_supply_orders_fields(fields_dict)
     if model_name == "SYSCO":
         return process_sysco_fields(fields_dict)
+    if model_name == "ODP_ORDER":
+        return fields_dict
     return fields_dict
 
 def process_products_data(products_data, model_name):
@@ -297,4 +299,6 @@ def process_products_data(products_data, model_name):
     if model_name == "SYSCO":
         new_products_data = process_sysco_invoices_products(products_data)
         return new_products_data
+    if model_name == "ODP_ORDER":
+        return products_data
     return products_data

@@ -1,30 +1,34 @@
 """
-Script to run the main program
+Script to run the main script
 """
+# EXTERNAL IMPORTS
 import os
 import time
 import json
-from datetime import datetime
 from dotenv import load_dotenv
-import functions as fc
 from api.post_invoice_parser import custom_analyze
+
+# INTERNAL IMPORTS
+from functions import (save_prebuilt_result_in_excel, save_result_in_excel)
 
 if __name__ == "__main__":
 
-    # Set vendor name & folder
-    MODEL_NAME = "HD_SUPPLY_ORDER"
-    FOLDER_NAME = "hd_supply/springhill_medford/june_2024/"
+    # Set the vendor name & paths
+    VENDOR_NAME = "odp"
+    MODEL_NAME = "ODP_ORDER"
+    HOTEL_NAME = "medford_airport"
+    DOCS_PATH = f"pdfs/{HOTEL_NAME}/{VENDOR_NAME}/pos" # Either pos or invoices
+    JSON_PATH = f"pdfs/{HOTEL_NAME}/{VENDOR_NAME}/json"
+    EXCEL_PATH = f"pdfs/{HOTEL_NAME}/{VENDOR_NAME}/{VENDOR_NAME}"
 
-    # Get env variables
+    # Get the env variables for the model
     load_dotenv()
     endpoint = os.getenv("API_ENDPOINT")
     key = os.getenv("API_KEY_1")
     model_id = os.getenv(f"{MODEL_NAME}_MODEL_ID")
 
     # Analyze all the PDFs store in the vendor folder
-    # is_checkpoint_file = False
-    date_prefix = datetime.now().strftime('%Y_%m_%d_')
-    for filename in os.listdir(f'pdfs/{FOLDER_NAME}'):
+    for filename in os.listdir(DOCS_PATH):
 
         # Check if the file is a PDF
         if filename.endswith(".pdf"):
@@ -32,27 +36,30 @@ if __name__ == "__main__":
             time.sleep(3)
 
             # Set input and output paths
-            input_path = f'pdfs/{FOLDER_NAME}/{filename}'
-            output_path = f'output_data/{FOLDER_NAME}/{date_prefix}orders.xlsx'
+            input_path = f"{DOCS_PATH}/{filename}"
+            output_path = f"{JSON_PATH}/{filename[:-4]}.json"
 
             # Analyze file with model
             print(f"Analyzing {filename}...")
-            result_dict = custom_analyze(endpoint, key, model_id, input_path, filename)
+            result_dict = custom_analyze(endpoint, key, model_id, input_path, output_path)
 
-            # with open("backup_json/hd_supply/towne_place/june_2024/backup_v2_54.json", "r") as json_file:
-            #     result_dict = json.load(json_file)
+    # Save the results in a excel
+    for filename in os.listdir(JSON_PATH):
 
-            # Save result_dict
-            # if MODEL_NAME == "PREBUILT":
-            #     fc.save_prebuilt_result_in_excel(result_dict, output_path)
-            # else:
-            #     fc.save_result_in_excel(result_dict, output_path, MODEL_NAME)
+        # Check if the file is a JSON
+        if filename.endswith(".json"):
+            # Set the input path
+            input_path = f"{JSON_PATH}/{filename}"
 
-            print(f"Analyzed {filename}\n")
+            # Load the JSON
+            with open(input_path, "r", encoding="utf-8") as json_file:
+                result_dict = json.load(json_file)
 
-        # NOTE: Is to start analyzing from checkpoint
-        # Check if the file is a checkpoint file
-        # if filename == "1.17.pdf":
-        #     is_checkpoint_file = True
+            # Save the result_dict
+            print(f"Processing to excel {filename}...")
 
-        break
+            # PREBUILT MODEL
+            if MODEL_NAME == "PREBUILT":
+                save_prebuilt_result_in_excel(result_dict, EXCEL_PATH)
+            else:
+                save_result_in_excel(result_dict, EXCEL_PATH, MODEL_NAME)
