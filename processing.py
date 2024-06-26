@@ -188,7 +188,7 @@ def process_price_sysco(price):
 
         # Convert to float
         return float(cleaned_price)
-    except ValueError as e:
+    except (ValueError, TypeError) as e:
         print(f"Error processing price: {price}")
         print(e)
         return price
@@ -202,7 +202,7 @@ def process_ordered_quantity_sysco(ordered_quantity, price, unit_price):
     # Return the whole number of price/unit price
     if price != '' and unit_price != '':
         qty = price / unit_price
-        return str(int(qty))
+        return int(qty)
 
     return ordered_quantity
 
@@ -217,6 +217,10 @@ def process_sysco_invoices_products(products):
     """
     new_products = []
     for product in products:
+        # 0. Ignore products with empty ProductNumber
+        if product['ProductNumber'] == '':
+            continue
+
         # 1. Identify if 2 products were merged
         products_to_process = [product]
         product_number_splitted = product['ProductNumber'].split(" ")
@@ -266,7 +270,7 @@ def process_sysco_invoices_products(products):
             prod['UnitPrice'] = process_price_sysco(prod['UnitPrice'])
 
             # 3. Process OrderedQuantity
-            if not prod['OrderedQuantity'].isdigit():
+            if prod['OrderedQuantity'] == '':
                 prod['OrderedQuantity'] = process_ordered_quantity_sysco(
                     prod['OrderedQuantity'],
                     prod['Price'],
@@ -286,7 +290,7 @@ def process_general_fields(fields_dict, model_name):
     """Function to process the general fields"""
     if model_name == "HD_SUPPLY_ORDER":
         return process_hd_supply_orders_fields(fields_dict)
-    if model_name == "SYSCO":
+    if model_name == "SYSCO" or model_name == "SYSCO_NOT_TYPED":
         return process_sysco_fields(fields_dict)
     if model_name == "ODP_ORDER":
         return fields_dict
@@ -296,7 +300,7 @@ def process_products_data(products_data, model_name):
     """Function to process the products data"""
     if model_name == "HD_SUPPLY_ORDER":
         return process_hd_supply_orders_products(products_data)
-    if model_name == "SYSCO":
+    if model_name == "SYSCO" or model_name == "SYSCO_NOT_TYPED":
         new_products_data = process_sysco_invoices_products(products_data)
         return new_products_data
     if model_name == "ODP_ORDER":
