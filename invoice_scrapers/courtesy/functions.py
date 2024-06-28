@@ -1,6 +1,7 @@
 """
 Module to store the functions
 """
+import pandas as pd
 
 # Selenium imports
 from selenium.webdriver.support.ui import WebDriverWait
@@ -8,6 +9,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
+
+# Internal imports
+import parameters as p
+import utils as ut
 
 # Scraping functions
 def login_to_courtesy(driver, url, username, password):
@@ -97,6 +102,20 @@ def extract_orders_href(driver):
         print(f"Error: {e}")
         return []
 
+def extract_orders_numbers(driver):
+    """Function to extract the orders numbers"""
+    try:
+        td_tags = driver.find_elements(By.CSS_SELECTOR, 'td[data-test-selector="orderHistoryTable_tableCell_orderNumber"]')
+        a_tags = [td.find_element(By.CSS_SELECTOR, 'a') for td in td_tags]
+        order_numbers = []
+        for a_tag in a_tags:
+            order_numbers.append(a_tag.text)
+        return order_numbers
+    except (TimeoutException, NoSuchElementException) as e:
+        print("Not able to extract the orders href")
+        print(f"Error: {e}")
+        return []
+
 def go_to_next_page(driver):
     """
     Function to go to the next page if it exists
@@ -144,16 +163,111 @@ def get_orders_links(driver):
             break
     return all_orders_links
 
-def get_order_data(driver, url):
+def get_orders_numbers(driver):
     """
-    Function to get the order data
+    Function to extract the orders links
+    1. Set results per page to 36
+    2. Get the links
+    3. Check for next page and go to it
     """
-    try:
-        driver.get(url)
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div[data-test-selector="page_OrderDetailsPage"]')))
-        print(f"Order {url} found")
+    next_page = True
+    all_orders_numbers = []
+    while next_page:
+        # Set results per page to 36
+        selected_36 = select_36_per_page(driver)
+        if selected_36:
+            # Extract the links
+            orders_numbers = extract_orders_numbers(driver)
+            all_orders_numbers.extend(orders_numbers)
 
-        # Get the data
-        order_data = {}
+            # Check for next page
+            next_page = go_to_next_page(driver)
+            if not next_page:
+                break
 
-        # Get the Order date
+        else:
+            print("Not able to select 36 results per page")
+            break
+    return all_orders_numbers
+
+def get_order_data_request(session, order_number):
+    """
+    Function to get the order data from API call
+    1. Set the url
+    2. Set/change the header 'referer' in the session
+    3. Make the request
+    """
+    # Set the url
+    URL = f"{p.ORDERS_BASE_API_PATH}{order_number}"
+
+    # Set the referer
+    REFERER = f"{p.BASE_REFERER_PATH}{order_number}"
+
+    # Set the headers
+    session.headers.update({'referer': REFERER})
+
+    # Make the request
+    response = session.get(URL, timeout=10)
+    if response.status_code == 200:
+        print(f"Order {order_number} data retrieved")
+        return response.json()
+    else:
+        print(f"Error while getting order {order_number} data")
+        return None
+
+def extract_items(list_of_items, order_id):
+    """Function to extract the items from the json"""
+    items = []
+    for item in list_of_items:
+        item_data = {}
+        item_data['OrderId'] = order_id
+        item_data['ProductCode'] = item['productErpNumber']
+        item_data['ProductDescription'] = item['description']
+        item_data['QuantityOrdered'] = item['qtyOrdered']
+        item_data['QuantityShipped'] = item['qtyShipped']
+        item_data['Unit'] = item['unitOfMeasure']
+        item_data['UnitPrice'] = item['unitPrice']
+        item_data['Price'] = item['lineTotal']
+        item_data['ProductUrl'] = item['productUri']
+        items.append(item_data)
+    return items
+
+def get_order_data(json, output_path):
+    """Function to extract the data from the json"""
+    order_data = {}
+
+    # Extract Ids and names
+    order_data['OrderId'] = json['webOrderNumber']
+    order_data['InvoiceDate'] = json['orderDate']
+
+    # Format data to MM-DD-YYYY
+    order_data['InvoiceDate'] = pd.to_datetime(order_data['InvoiceDate']).strftime('%m-%d-%Y')
+
+    order_data['CustomerId'] = json['customerNumber']
+    order_data['CustomerName'] = json['btCompanyName']
+    order_data['VendorName'] = 'Courtesy Products'
+
+    # Extract the shipping address
+    country = json['stCountry']
+    city = json['shipToCity']
+    state = json['shipToState']
+    postal_code = json['shipToPostalCode']
+    street = json['stAddress1']
+    address = f"{street}, {city}, {state}, {postal_code}, {country}"
+    order_data['ShippingAddress'] = address
+
+    # Extract the amounts
+    order_data['InvoiceTotal'] = json['orderTotal']
+    order_data['InvoiceSubtotal'] = json['orderSubTotal']
+    order_data['TotalTax'] = json['taxAmount']
+    order_data['Discount'] = json['discountAmount']
+    order_data['ShippingCost'] = json['shippingCharges']
+    order_data['OtherCharges'] = json['otherCharges']
+
+    # Extract the items
+    items = extract_items(json['orderLines'], order_data['OrderId'])
+
+    # Save all the data
+    fields_df = pd.DataFrame([order_data])
+    items_df = pd.DataFrame(items)
+    ut.write_in_excel_file(output_path, fields_df, items_df)

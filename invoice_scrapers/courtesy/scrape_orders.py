@@ -24,10 +24,21 @@ logged_in = f.login_to_courtesy(
 # Go to the page
 if logged_in:
     in_order_history = f.go_to_order_history(driver)
+    time.sleep(2)
     if in_order_history:
         # Get the invoices links
-        order_links = f.get_orders_links(driver)
-        for order_link in order_links:
+        order_numbers = f.get_orders_numbers(driver)
+        print(f"Order numbers: {order_numbers}")
+        time.sleep(2)
+
+        # Set up request session
+        session = ut.set_up_session(driver)
+
+        # Get the invoices data
+        for order_number in order_numbers:
             time.sleep(2)
-            order_data = f.get_order_data(driver, order_link)
+            order_data_json = f.get_order_data_request(session, order_number)
+            if order_data_json:
+                output_path = "pdfs/springhill_medford/courtesy/parsed_orders.xlsx"
+                order_data = f.get_order_data(order_data_json, output_path)
         driver.quit()
