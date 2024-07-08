@@ -2,6 +2,7 @@
 Module to store all the functions
 """
 import pandas as pd
+from datetime import datetime
 
 # Selenium imports
 from bs4 import BeautifulSoup
@@ -14,6 +15,7 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException,
 # Internal imports
 import parameters as p
 import utils as ut
+
 ###################################### SCRAPING FUNCTIONS ######################################
 def login_to_pepsico(driver, url, username, password):
     try:
@@ -156,10 +158,28 @@ def extract_total(soup):
     total = span_value.text if span_value else ""
     return total.strip()
 
+def reformat_date(date_str):
+    # Extract the date part
+    date_part = date_str.split()[1]
+
+    # Parse the date part into a datetime object
+    date_obj = datetime.strptime(date_part, "%m/%d/%Y")
+
+    # Reformat the date to MM/DD/YYYY
+    formatted_date = date_obj.strftime("%m/%d/%Y")
+
+    return formatted_date
+
 def extract_order_date(soup):
     """Function to extract the date of the order"""
+    # Extract the date
     date_span = soup.find('span', id='orderdetails_placeddate')
     date = date_span.text if date_span else ""
+
+    # Process the date
+    if date != "":
+        date = reformat_date(date)
+
     return date.strip()
 
 def extract_order_items(soup):
@@ -169,16 +189,102 @@ def extract_order_items(soup):
     item_trs = tbody.find_all('tr', class_='responsive-table-item') if tbody else []
     return item_trs
 
-def extract_items_data(order_items):
+def extract_product_title(item_tr):
+    """Function to extract the title of a product"""
+    title_span = item_tr.find('span', class_='item-name')
+    title = title_span.text if title_span else ""
+    return title.strip()
+
+def extract_product_case_pack_size(item_tr):
+    """Function to extract the case and pack size of a product"""
+    sizes_div = item_tr.find_all('div', class_='item-unit-package')
+    for div in sizes_div:
+        if 'Case' in div.text:
+            case_pack_size_div = div
+        else:
+            pack_size_div = div
+
+    # Set case size
+    case_pack_size_span = case_pack_size_div.find('span')
+    case_pack_size = case_pack_size_span.text if case_pack_size_span else ""
+
+    # Set the pack size
+    pack_size_span = pack_size_div.find('span')
+    pack_size = pack_size_span.text if pack_size_span else ""
+
+    return case_pack_size.strip(), pack_size.strip()
+
+def extract_product_sku_and_upc(item_tr):
+    """Function to extract the SKU and UPC of a product"""
+    skus_divs = item_tr.find_all('div', class_='item-sku')
+    for div in skus_divs:
+        if 'SKU' in div.text:
+            sku_div = div
+        else:
+            upc_div = div
+
+    # Set the SKU
+    sku_span = sku_div.find('span')
+    sku = sku_span.text if sku_span else ""
+
+    # Set the UPC
+    upc_span = upc_div.find('span')
+    upc = upc_span.text if upc_span else ""
+
+    return sku.strip(), upc.strip()
+
+def extract_product_quantity(item_tr):
+    """Function to extract the ordered qty of a product"""
+    qty_div = item_tr.find('div', class_='item-quantity')
+    qty_span = qty_div.find('span', class_='qtyValue')
+    qty = qty_span.text if qty_span else ""
+    return qty.strip()
+
+def extract_unit_price(item_tr):
+    """Function to extract the unit price of a product"""
+    unit_price_span = item_tr.find('span', class_='item-unit-price')
+    unit_price = unit_price_span.text if unit_price_span else ""
+    return unit_price.strip()
+
+def extract_product_price(item_tr):
+    """Function to extract the product price"""
+    price_div = item_tr.find('div', class_='item-total')
+    price = price_div.text if price_div else ""
+    return price.strip()
+
+def extract_items_data(order_items, order_id):
     """Function to extract the data of the items of an order"""
     items_data = []
+    for item in order_items:
+        item_data = {}
+
+        # Set the order id and description
+        item_data['OrderId'] = order_id
+        item_data['ProductDescription'] = extract_product_title(item)
+
+        # Extract sizes
+        case_size, pack_size = extract_product_case_pack_size(item)
+        item_data['CaseSize'] = case_size
+        item_data['PackSize'] = pack_size
+
+        # Extract SKU and UPC
+        item_data['SKU'], item_data['UPC'] = extract_product_sku_and_upc(item)
+
+        # Extract quantity and prices
+        item_data['OrderedQuantity'] = extract_product_quantity(item)
+        item_data['UnitPrice'] = extract_unit_price(item)
+        item_data['Price'] = extract_product_price(item)
+
+        items_data.append(item_data)
     return items_data
 
 def extract_order_data(soup):
     """Function to extract the data of an order"""
     order_data = {}
+    items = []
 
     # Extact general data
+    order_data['VendorName'] = 'Pepsico'
     order_data['OrderId'] = extract_order_id(soup)
     order_data['Subtotal'] = extract_subtotal(soup)
     order_data['ShippingAddress'] = extract_shipping_address(soup)
@@ -188,9 +294,12 @@ def extract_order_data(soup):
 
     # Extract the items of the order
     order_items = extract_order_items(soup)
-    order_data['Items'] = extract_items_data(order_items)
+    items = extract_items_data(order_items, order_data['OrderId'])
 
-    return order_data
+    # Save the data
+    fields_df = pd.DataFrame([order_data])
+    items_df = pd.DataFrame(items)
+    ut.write_in_excel_file(p.OUTPUT_PATH, fields_df, items_df)
 
 def get_order_data(driver, order_url):
     """Function to get the data of an order of Pepsico"""
@@ -203,8 +312,10 @@ def get_order_data(driver, order_url):
         # Get soup
         soup = BeautifulSoup(driver.page_source, 'html.parser')
 
-        order_data = extract_order_data(soup)
-        return order_data
+        # Extract and save the data
+        extract_order_data(soup)
+
     except (TimeoutException, NoSuchElementException) as e:
-        print(f"Error: {e}")
-        return None
+        print(f"Error while extracting the data: {e}")
+
+        # TODO: Add logic to handle the error and/or saving the order url with the error

@@ -84,3 +84,26 @@ def my_find_element(driver, by, element):
     except NoSuchElementException:
         print(f"No such element {element}")
         return None
+
+def append_to_excel(writer, df, sheet_name, output_path):
+    """Function to append a DataFrame to an excel file"""
+    try:
+        old_df = pd.read_excel(output_path, sheet_name=sheet_name)
+        print("Found old df")
+        new_df = pd.concat([old_df, df], ignore_index=True)
+    except FileNotFoundError:
+        new_df = df
+    except ValueError:
+        new_df = df
+    new_df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+def write_in_excel_file(output_path, fields_df, products_df):
+    """Function to write in the excel file"""
+    try:
+        with pd.ExcelWriter(output_path, engine='openpyxl', mode='a', if_sheet_exists='overlay') as writer:
+            append_to_excel(writer, fields_df, 'InvoiceData', output_path)
+            append_to_excel(writer, products_df, 'ProductsData', output_path)
+    except FileNotFoundError:
+        with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
+            append_to_excel(writer, fields_df, 'InvoiceData', output_path)
+            append_to_excel(writer, products_df, 'ProductsData', output_path)

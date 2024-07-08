@@ -33,12 +33,8 @@ if in_order_history:
 
     # Loop through the orders
     for url in orders_urls:
-        order_data = f.get_order_data(driver, url)
-        for key, value in order_data.items():
-            print(f"{key}: {value}")
-        break
-
-    pass
+        time.sleep(2)
+        f.get_order_data(driver, url)
 else:
     print("Failed to go to order history page")
 
