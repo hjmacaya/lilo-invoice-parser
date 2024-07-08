@@ -14,9 +14,9 @@ from functions import (save_prebuilt_result_in_excel, save_result_in_excel)
 if __name__ == "__main__":
 
     # Set the vendor name & paths
-    VENDOR_NAME = "ahr"
-    MODEL_NAME = "PREBUILT"
-    HOTEL_NAME = "towneplace_medford"
+    VENDOR_NAME = "sysco"
+    MODEL_NAME = "SYSCO_NOT_TYPED"
+    HOTEL_NAME = "courtyard_eugene_springfield"
     DOCS_PATH = f"pdfs/{HOTEL_NAME}/{VENDOR_NAME}/invoices" # Either pos or invoices
     JSON_PATH = f"pdfs/{HOTEL_NAME}/{VENDOR_NAME}/json"
     EXCEL_PATH = f"pdfs/{HOTEL_NAME}/{VENDOR_NAME}/{VENDOR_NAME}"

@@ -281,6 +281,22 @@ def process_sysco_invoices_products(products):
 
     return new_products
 
+"""
+Nestle Orders Model
+Processing functions
+"""
+
+def process_nestle_orders_products(products):
+    """
+    Function to process the Nestle orders products
+    1. Unify Brand + Description + PackSize
+    """
+    new_products = []
+    for product in products:
+        # 1. Unify Brand + Description + PackSize
+        product['ProductDescription'] = f"{product['ProductBrand']} {product['ProductDescription']} {product['PackSize']}"
+        new_products.append(product)
+    return new_products
 
 """
 General processing functions
@@ -305,4 +321,6 @@ def process_products_data(products_data, model_name):
         return new_products_data
     if model_name == "ODP_ORDER":
         return products_data
+    if model_name == "NESTLE_ORDER":
+        return process_nestle_orders_products(products_data)
     return products_data

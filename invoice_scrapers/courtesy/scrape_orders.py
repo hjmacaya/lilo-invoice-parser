@@ -1,7 +1,7 @@
 """
 Script to scrape invoices from Courtesy
 """
-# ETERNAL IMPORTS
+# EXTERNAL IMPORTS
 import os
 import time
 from dotenv import load_dotenv

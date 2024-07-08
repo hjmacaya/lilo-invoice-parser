@@ -49,7 +49,6 @@ def login_to_courtesy(driver, url, username, password):
         else:
             print('Sign in failed')
             return False
-            raise Exception('Sign in failed')
     except (TimeoutException, NoSuchElementException) as e:
         print(f"Error: {e}")
         return False
