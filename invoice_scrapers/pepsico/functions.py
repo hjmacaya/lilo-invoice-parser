@@ -91,7 +91,7 @@ def get_the_urls(driver):
         print('Getting the order urls...')
         a_tags = driver.find_elements(By.CLASS_NAME, 'responsive-table-link')
 
-        orders_urls = [a_tag['href'] for a_tag in a_tags] if a_tags else []
+        orders_urls = [a_tag.get_attribute('href') for a_tag in a_tags] if a_tags else []
         return orders_urls
 
     except (TimeoutException, NoSuchElementException) as e:
@@ -117,7 +117,7 @@ def extract_subtotal(soup):
     # Extract the subtotal
     span_value = subtotal_group.find('span', class_='item-value')
     subtotal = span_value.text if span_value else ""
-    return subtotal
+    return subtotal.strip()
 
 def extract_shipping_address(soup):
     """Function to extract the shipping address of an order"""
@@ -132,7 +132,7 @@ def extract_shipping_address(soup):
     # Extract the address
     div_value = address_div.find('div', class_='col-value')
     address = div_value.text if div_value else ""
-    return address
+    return address.strip()
 
 def extract_total_tax(soup):
     """Funtion to extract the total tax of an order"""
@@ -147,24 +147,50 @@ def extract_total_tax(soup):
     # Extract the total tax
     span_value = total_tax_group.find('span', class_='item-value')
     total_tax = span_value.text if span_value else ""
-    return total_tax
+    return total_tax.strip()
 
 def extract_total(soup):
     """Function to extract the total of the order"""
     total_div = soup.find('div', class_='item-group total')
     span_value = total_div.find('span', class_='item-value')
     total = span_value.text if span_value else ""
-    return total
+    return total.strip()
 
+def extract_order_date(soup):
+    """Function to extract the date of the order"""
+    date_span = soup.find('span', id='orderdetails_placeddate')
+    date = date_span.text if date_span else ""
+    return date.strip()
+
+def extract_order_items(soup):
+    """Function to extract the items of an order"""
+    orders_table = soup.find('table', class_='detailOrderHistory')
+    tbody = orders_table.find('tbody') if orders_table else None
+    item_trs = tbody.find_all('tr', class_='responsive-table-item') if tbody else []
+    return item_trs
+
+def extract_items_data(order_items):
+    """Function to extract the data of the items of an order"""
+    items_data = []
+    return items_data
 
 def extract_order_data(soup):
     """Function to extract the data of an order"""
     order_data = {}
 
-    # Extact data
+    # Extact general data
     order_data['OrderId'] = extract_order_id(soup)
     order_data['Subtotal'] = extract_subtotal(soup)
     order_data['ShippingAddress'] = extract_shipping_address(soup)
+    order_data['TotalTax'] = extract_total_tax(soup)
+    order_data['Total'] = extract_total(soup)
+    order_data['OrderDate'] = extract_order_date(soup)
+
+    # Extract the items of the order
+    order_items = extract_order_items(soup)
+    order_data['Items'] = extract_items_data(order_items)
+
+    return order_data
 
 def get_order_data(driver, order_url):
     """Function to get the data of an order of Pepsico"""
