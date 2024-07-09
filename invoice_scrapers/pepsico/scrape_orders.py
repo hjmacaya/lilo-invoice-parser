@@ -18,11 +18,12 @@ driver = ut.set_up_driver()
 logged_in = f.login_to_pepsico(
     driver,
     p.LOGIN_URL,
-    os.getenv('PEPSICO_USERNAME'),
-    os.getenv('PEPSICO_PASSWORD')
+    os.getenv('PEPSICO_USERNAME_2'),
+    os.getenv('PEPSICO_PASSWORD_2')
     )
 
 # 2. Go to invoices pages
+# NOTE: REMEMBER TO CHANGE THE OUTPUT PATH IN PARAMETERS
 in_order_history = f.go_to_order_history_page(driver)
 time.sleep(2)
 if in_order_history:
