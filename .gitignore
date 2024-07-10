@@ -16,3 +16,12 @@ __pycache__/
 
 # Ignore analysis docs folder
 analysis_docs/
+
+# Ignore venv folder
+venv/
+
+# Ignore process_orders.py
+process_orders.py
+
+# Ignore the analyzing.py
+analyzing.py

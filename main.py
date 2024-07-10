@@ -14,12 +14,14 @@ from functions import (save_prebuilt_result_in_excel, save_result_in_excel)
 if __name__ == "__main__":
 
     # Set the vendor name & paths
-    VENDOR_NAME = "sysco"
-    MODEL_NAME = "SYSCO_NOT_TYPED"
-    HOTEL_NAME = "courtyard_eugene_springfield"
-    DOCS_PATH = f"pdfs/{HOTEL_NAME}/{VENDOR_NAME}/invoices" # Either pos or invoices
-    JSON_PATH = f"pdfs/{HOTEL_NAME}/{VENDOR_NAME}/json"
-    EXCEL_PATH = f"pdfs/{HOTEL_NAME}/{VENDOR_NAME}/{VENDOR_NAME}"
+    # NOTE: The folders must be created before running the script
+    # TODO: Create the Hotel folders when they don't exists
+    VENDOR_NAME = "hd_supply"
+    MODEL_NAME = "HD_SUPPLY_ORDER"
+    HOTEL_NAME = "wyndham_garden_newark"
+    DOCS_PATH = f"output_files/{HOTEL_NAME}/{VENDOR_NAME}/invoices" # Either pos or invoices
+    JSON_PATH = f"output_files/{HOTEL_NAME}/{VENDOR_NAME}/json"
+    EXCEL_PATH = f"output_files/{HOTEL_NAME}/{VENDOR_NAME}/{VENDOR_NAME}"
 
     # Get the env variables for the model
     load_dotenv()
