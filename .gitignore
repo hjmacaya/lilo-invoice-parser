@@ -25,3 +25,9 @@ process_orders.py
 
 # Ignore the analyzing.py
 analyzing.py
+
+# Ignore the .pdf files
+*.pdf
+
+# Ignore the .json files
+*.json
